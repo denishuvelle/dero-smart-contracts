@@ -40,7 +40,7 @@ Function TryToWin(value Uint64) Uint64
 	40  STORE("blocknumberfsincebeginning", BLOCK_HEIGHT())
     50  STORE("tentatives", 0)
 	60 printf "Initialize executed"
-	40 RETURN 0 
+	80 RETURN 0 
 	End Function
 	
 	// This function is used to change owner

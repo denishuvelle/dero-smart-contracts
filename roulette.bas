@@ -3,13 +3,18 @@
    Simple "roulette" game... odd/even instead of colors ;-)
 */
 
-    Function AddCoins(value Uint64) Uint64
-    10  STORE("totalamount", LOAD("totalamount") + value)
-    20  RETURN 0
+Function AddCoins(value Uint64) Uint64
+    5	DIM total as Uint64
+	10	LET total = LOAD("totalamount")
+	20  PRINTF "Totalamount before AddCoins: %d" total
+    30  STORE("totalamount", LOAD("totalamount") + value)
+	35	LET total = LOAD("totalamount")
+    40  PRINTF "Totalamount after AddCoins: %d" total
+    50  RETURN 0
     End Function
     
 Function TryToWinWithPreciseNumber(value Uint64, number Uint64) Uint64
-    5 DIM randomNumber Uint64
+    5	dim randomNumber, reward as Uint64
 	10  IF value == 2000000000000 THEN GOTO 40  // we can only play with 2 DERO or less
     20  printf "You can only play with 2 DEROs or less"
     30  RETURN 0
@@ -19,19 +24,21 @@ Function TryToWinWithPreciseNumber(value Uint64, number Uint64) Uint64
     80 IF LOAD("totalamount") >= 100000000000000 THEN GOTO 120
     90  PRINTF "SC does not contain enough dero to ensure your gain, you will be able to play when owner will add coins."
     100 RETURN 0
-    120  LET randomNumber = RANDOM(37)
-    130 IF randomNumber == number THEN GOTO 260
-    140 SEND_DERO_TO_ADDRESS(SIGNER(), value * 36)
-    150 STORE("totalamount", LOAD("totalamount") - (value * 36))
-    150 PRINTF "You won %d DEROs! Congrats!" (value * 36)
+    120 LET randomNumber = RANDOM(37)
+	125	PRINTF "Roulette stopped on %d" randomNumber
+    130 IF randomNumber != number THEN GOTO 260
+    135	LET reward = (value * 36)
+	140 SEND_DERO_TO_ADDRESS(SIGNER(), reward)
+    150 STORE("totalamount", LOAD("totalamount") - reward)
+    155 PRINTF "You won %d DEROs! Congrats!" reward
     160 RETURN 0
     260 STORE("totalamount", LOAD("totalamount") + value)
     270 PRINTF "Sorry... you lost! Try again!"
     280 RETURN 0
 	End Function
 	
-    Function TryToWinWithOddOrEven(value Uint64, kindofnumber string) Uint64
-    5 DIM randomNumber Uint64
+    Function TryToWinWithOddOrEven(value Uint64, kindofnumber String) Uint64
+    5	dim randomNumber, reward as Uint64
     10  IF value == 2000000000000 THEN GOTO 40  // we can only play with 2 DERO or less
     20  printf "You can only play with 2 DEROs or less"
     30  RETURN 0
@@ -42,12 +49,14 @@ Function TryToWinWithPreciseNumber(value Uint64, number Uint64) Uint64
     90  PRINTF "SC does not contain enough dero to ensure your gain, you will be able to play when owner will add coins."
     100 RETURN 0
     120 LET randomNumber = RANDOM(37)
-    130 IF (randomNumber % 2 == 0 && kindofnumber == "ODD") || (randomNumber % 2 == 1 && kindofnumber == "EVEN") THEN GOTO 200
+	125	PRINTF "Roulette stopped on %d" randomNumber
+    130 IF (randomNumber % 2 == 1 && kindofnumber == "ODD") || (randomNumber % 2 == 0 && kindofnumber == "EVEN") THEN GOTO 200
     140 PRINTF "Sorry... you lost! Try again!"
     160 RETURN 0
-    200 SEND_DERO_TO_ADDRESS(SIGNER(), value * 2)
-    210 STORE("totalamount", LOAD("totalamount") - (value * 2))
-    250 PRINTF "You won %d DEROs! Congrats!" (value * 2)
+	190	LET reward = (value * 2)
+    200 SEND_DERO_TO_ADDRESS(SIGNER(), reward)
+    210 STORE("totalamount", LOAD("totalamount") - reward)
+    250 PRINTF "You won %d DEROs! Congrats!" reward
     280 RETURN 0
     End Function
 

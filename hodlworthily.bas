@@ -26,7 +26,6 @@
 	Function Initialize() Uint64
 	10  STORE("owner", SIGNER())   // store in DB  ["owner"] = address
 	20  STORE("foundationaddress", "dETofNoog8yaoLjH7SHy7NVAr91jZmDyC5UdrGi8xyeteinEaGEtw3APyjLbwGcunjYSJM3GsHXiKUKAJbKYmsC765GTfJ5dcV")   // HODL contract will always give 1% of the amount Or more if withdraw before the end of the HODL period
-	30  STORE("maxpercentageforfoundation", 5000)   // Contract will give at least 50% even if withdraw to soon
 	35 printf "Initialize executed"
 	40 RETURN 0 
 	End Function
@@ -48,18 +47,32 @@
 	End Function
 	
 	// if everything is okay, coins will be showing in signers wallet
-	Function Withdraw(amount Uint64) Uint64
+	Function Withdraw() Uint64
 	5	printf "Entering Withdraw"
-    10  DIM amount,amountforfoundation,startblockheight,numberfofblockstowait,endblockheight,differenceOfBlocks,currentBlockHeight,percentagedone,percentageforfoundation as Uint64
-    15  IF EXISTS("depositor_" + SIGNER()) == 0) THEN GOTO 30 
+    10  DIM amount,amountforfoundation,startblockheight,numberfofblockstowait,endblockheight,differenceOfBlocks,currentBlockHeight,percentagedone,percentageforfoundation,amountback as Uint64
+	12	DIM signer,depokey as String
+	13	LET signer = SIGNER()
+	14	LET depokey = "depositor_" +  signer
+    15  IF EXISTS(depokey) == 1 THEN GOTO 30 
+	17	printf "Unknown depositor..."
 	20  RETURN 1
-	30  LET amount = LOAD("depositor_" + SIGNER())
-	35  LET startblockheight = LOAD("depositor_beginning_period_block_" + SIGNER())
-	40  LET numberfofblockstowait = LOAD("depositor_number_of_blocks_" + SIGNER())
+	30  LET amount = LOAD(depokey)
+	31	PRINTF "amount: %d" amount
+	35  LET startblockheight = LOAD("depositor_beginning_period_block_" + signer)
+	36	PRINTF "startblockheight: %d" startblockheight
+	40  LET numberfofblockstowait = LOAD("depositor_number_of_blocks_" + signer)
+	41	PRINTF "numberfofblockstowait: %d" numberfofblockstowait
     45  LET endblockheight = startblockheight + numberfofblockstowait
+	46	PRINTF "endblockheight: %d" endblockheight
     50  LET currentBlockHeight = BLOCK_HEIGHT()
-    55  LET differenceOfBlocks = currentBlockHeight - endblockheight
-    120 IF blockheighttoendperiod <= BLOCK_HEIGHT() THEN GOTO 200 // The end block Is "in the past", we can return the coins (except 1% for the foundation)
+	51	PRINTF "currentBlockHeight: %d" currentBlockHeight
+			
+    55  IF currentBlockHeight >= endblockheight THEN GOTO 65 ELSE GOTO 70
+	65	LET differenceOfBlocks = currentBlockHeight - endblockheight
+	70	LET differenceOfBlocks = endblockheight - currentBlockHeight
+	
+	100	PRINTF "differenceOfBlocks: %d" differenceOfBlocks	
+    120 IF endblockheight <= BLOCK_HEIGHT() THEN GOTO 200 // The end block Is "in the past", we can return the coins (except 1% for the foundation)
     // If we are here, the signer withdraws before the end of the HODL period.
     130 LET percentagedone = (differenceOfBlocks/numberfofblockstowait) * 100
     140 IF percentagedone > 50 THEN GOTO 170
@@ -69,10 +82,13 @@
 	170 LET percentageforfoundation = 100 - percentagedone
     175 GOTO 210
     200 percentageforfoundation = 1
-    210 PRINT "Percentage for foundation: " + percentageforfoundation
+    210 PRINTF "Percentage for foundation: %d" percentageforfoundation
     215 LET amountforfoundation = (amount / 100) * percentageforfoundation
-    217 PRINT "Amount for foundation: " + amountforfoundation
-    220 SEND_DERO_TO_ADDRESS(SIGNER(), amount - amountforfoundation)
-    225 SEND_DERO_TO_ADDRESS(LOAD("foundationaddress"), amountforfoundation)
+	216	LET amountback = amount - amountforfoundation
+    217 PRINTF "Amount for foundation: %d" amountforfoundation
+    218 PRINTF "Amount for signer: %d" amountback
+	219	STORE(depokey, 0)
+    220 SEND_DERO_TO_ADDRESS(signer, amountback)
+    225 SEND_DERO_TO_ADDRESS(LOAD("foundationaddress"), (amountforfoundation / 100) * 99) // Due to transfer fees
     300 RETURN 0
 	End Function
